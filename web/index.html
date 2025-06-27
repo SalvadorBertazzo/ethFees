@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ETH Gas Analyzer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-[#0e0e0e] text-white flex flex-col items-center justify-center p-6 font-sans">
+
+  <div class="relative w-full max-w-md bg-[#151515] p-8 space-y-8 border border-[#2a2a2a] mx-auto">
+    <img src="favicon.ico" alt="Ethereum Logo"
+      class="absolute left-1/2 -top-7 transform -translate-x-1/2 w-14 h-14 shadow-lg bg-[#151515] rounded-full border border-[#2a2a2a]" />
+
+    <!-- Título -->
+    <div class="space-y-1">
+      <h1 class="text-2xl font-medium text-white tracking-wide">Ethereum Gas Analyzer</h1>
+      <p class="text-sm text-gray-400">Analyze the total gas you've spent on Ethereum</p>
+      <p class="text-xs text-gray-600">Based on your last 10,000 transactions</p>
+    </div>
+
+    <!-- Formulario -->
+    <form id="walletForm" class="flex gap-2">
+      <input
+        type="text"
+        id="walletInput"
+        class="flex-1 bg-[#0e0e0e] border border-[#2a2a2a] text-white placeholder-gray-500 px-3 py-2 focus:outline-none focus:border-[#3b82f6] transition rounded-none"
+        placeholder="Ethereum address (0x...)"
+        autocomplete="off"
+        required
+      />
+      <button
+        type="submit"
+        class="bg-[#627eea] hover:bg-[#5776ec] text-white px-4 py-2 text-sm transition rounded-none"
+      >
+        Check
+      </button>
+    </form>
+
+    <!-- Resultado -->
+    <div id="result" class="text-sm text-gray-300 space-y-2"></div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="w-full fixed bottom-0 left-0 text-center text-sm text-gray-500 border-t border-[#2a2a2a] bg-[#0e0e0e]">
+    <div class="flex items-center justify-center gap-4 py-4">
+      <span>© Salvador Bertazzo</span>
+      <a href="/" target="_blank" class="hover:text-white transition" title="Website">
+        Website
+      </a>
+      <a href="https://github.com/SalvadorBertazzo" target="_blank" class="hover:text-white transition" title="GitHub">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+          <path fill-rule="evenodd" d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577v-2.23c-3.338.724-4.033-1.415-4.033-1.415-.546-1.385-1.333-1.754-1.333-1.754-1.09-.745.082-.729.082-.729 1.204.085 1.838 1.24 1.838 1.24 1.07 1.834 2.807 1.304 3.492.996.108-.775.418-1.304.76-1.603-2.665-.3-5.467-1.332-5.467-5.93 0-1.31.467-2.38 1.235-3.22-.123-.303-.535-1.523.117-3.176 0 0 1.008-.322 3.3 1.23a11.52 11.52 0 013.003-.403c1.02.005 2.047.137 3.003.403 2.29-1.552 3.296-1.23 3.296-1.23.653 1.653.24 2.873.117 3.176.77.84 1.233 1.91 1.233 3.22 0 4.61-2.807 5.625-5.48 5.92.43.372.823 1.104.823 2.223v3.293c0 .322.218.694.825.576C20.565 21.796 24 17.297 24 12c0-6.63-5.37-12-12-12z" clip-rule="evenodd" />
+        </svg>
+      </a>
+    </div>
+  </footer>
+  
+
+  <!-- Script -->
+  <script>
+    const form = document.getElementById('walletForm');
+    const input = document.getElementById('walletInput');
+    const resultDiv = document.getElementById('result');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      resultDiv.innerHTML = '<div class="text-gray-500 text-center py-4">Loading...</div>';
+      let address = input.value.trim();
+
+      if (!address.startsWith('0x') && !address.startsWith('0X')) {
+        address = '0x' + address;
+      }
+
+      try {
+        const res = await fetch(`http://localhost:8080/api/fees/${address}`);
+        const data = await res.json();
+
+        console.log(data);
+
+        if (data.error) {
+          resultDiv.innerHTML = `<div class="text-red-500 text-center py-2">${data.error}</div>`;
+          return;
+        }
+
+        resultDiv.innerHTML = `
+          <div class="space-y-2 mb-4">
+            <div class="flex justify-between items-center"><span class="font-semibold text-gray-400">Address:</span><span class="truncate text-white">${data.address}</span></div>
+            <div class="flex justify-between items-center"><span class="font-semibold text-gray-400">Number of outgoing transactions:</span><span class="text-white">${data.total_out_txs}</span></div>
+            <div class="flex justify-between items-center"><span class="font-semibold text-gray-400">Total fees (ETH):</span><span class="text-white">${Number(data.total_fees_eth)}</span></div>
+            <div class="flex justify-between items-center"><span class="font-semibold text-gray-400">Total fees (GWEI):</span><span class="text-white">${Number(data.total_fees_gwei).toLocaleString(undefined, {maximumFractionDigits: 2})}</span></div>
+          </div>
+          <div><span class="font-semibold text-gray-400">OUT Transactions</span>
+            <ul class="divide-y divide-[#2a2a2a] mt-2 max-h-64 overflow-y-auto">
+                ${(data.out_transactions || []).map(tx => `
+                    <li class="py-4 px-3 bg-[#131313] transition-all border-l-4 border-transparent hover:border-blue-500 hover:bg-[#1a1a1a]">
+                    <div class="text-xs mb-1">
+                        <span class="text-gray-500">Tx Hash:</span>
+                        <a href="https://etherscan.io/tx/${tx.hash}" target="_blank" class="text-blue-400 hover:text-blue-300 underline break-all font-mono ml-1">
+                        ${tx.hash.slice(0, 18)}...${tx.hash.slice(-6)}
+                        </a>
+                    </div>
+                    <div class="text-xs mb-2">
+                        <span class="text-gray-500">To:</span>
+                        <span class="break-all font-mono ml-1">${tx.to.slice(0, 10)}...${tx.to.slice(-6)}</span>
+                    </div>
+                    <div class="mt-2 space-y-1 text-xs text-gray-400">
+                        <div class="flex justify-between">
+                        <span>Gas used:</span>
+                        <span class="font-mono">${parseInt(tx.gasUsed).toLocaleString()}</span>
+                        </div>
+                        <div class="flex justify-between">
+                        <span>Gas price:</span>
+                        <span class="font-mono">${(parseInt(tx.gasPrice) / 1e9).toLocaleString(undefined, {maximumFractionDigits: 2})} Gwei</span>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-600 mt-3 text-right">
+                        ${new Date(parseInt(tx.timeStamp) * 1000).toLocaleDateString()} ${new Date(parseInt(tx.timeStamp) * 1000).toLocaleTimeString()}
+                    </div>
+                    </li>
+                `).join('')}
+            </ul>
+          </div>
+        `;
+        input.value = '';
+      } catch (err) {
+        resultDiv.innerHTML = `<div class="text-red-500 text-center py-2">Error: ${err.message}</div>`;
+      }
+    });
+  </script>
+</body>
+</html>
