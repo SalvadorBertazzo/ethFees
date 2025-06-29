@@ -13,9 +13,9 @@
       class="absolute left-1/2 -top-7 transform -translate-x-1/2 w-14 h-14 shadow-lg bg-[#151515] rounded-full border border-[#2a2a2a]" />
 
     <!-- Título -->
-    <div class="space-y-1">
+    <div class="space-y-1 text-center">
       <h1 class="text-2xl font-medium text-white tracking-wide">Ethereum Gas Analyzer</h1>
-      <p class="text-sm text-gray-400">Analyze the total gas you've spent on Ethereum</p>
+      <p class="text-sm text-gray-400">Track how much you've spent on transaction fees</p>
       <p class="text-xs text-gray-600">Based on your last 10,000 transactions</p>
     </div>
 
@@ -73,7 +73,7 @@
       }
 
       try {
-        const res = await fetch(`http://localhost:8080/api/fees/${address}`);
+        const res = await fetch(`/api/fees/${address}`);
         const data = await res.json();
 
         console.log(data);

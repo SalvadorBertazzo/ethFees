@@ -3,6 +3,7 @@ package main
 import (
 	"ethFees/internal/api"
 	"log"
+	"os"
 
 	"github.com/joho/godotenv"
 )
@@ -15,5 +16,9 @@ func main() {
 
 	server := api.NewServer()
 
-	log.Fatal(server.Start(":8080"))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Fatal(server.Start(":" + port))
 }
