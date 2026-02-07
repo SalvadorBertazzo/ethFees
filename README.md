@@ -1,86 +1,72 @@
-# Ethereum Gas Analyzer
+# ETH Fees
 
-A web application to analyze and track how much you've spent on Ethereum transaction fees. It fetches your last 10,000 transactions, calculates total gas spent, and displays detailed information about outgoing transactions.
+Web app that calculates how much an Ethereum address has spent on gas fees. It pulls the last 10,000 transactions from Etherscan, filters outgoing ones, and shows the total cost in ETH, GWEI, and USD.
 
-## Features
+Live demo: https://ethfees.up.railway.app/
 
-- 🔍 Analyze Ethereum addresses for gas usage
-- 📊 Shows total fees in ETH and GWEI
-- 🧾 Lists outgoing transactions with details (hash, recipient, gas used, gas price, timestamp)
-- ⚡ Fast, modern UI (Tailwind CSS)
-- 🌐 Simple REST API backend in Go
+![Demo](assets/demo.gif)
 
-### 🚀 Live Demo
+## How it works
 
-https://ethfees.up.railway.app/
+You enter an Ethereum address. The backend queries the Etherscan API to get the transaction history, filters only outgoing transactions (where the address is the sender), and calculates the total gas fees. It also fetches the current ETH/USD price to show the equivalent in dollars, both as a total and per transaction.
 
----
+## Stack
 
-## Getting Started
+- **Backend:** Go (Echo framework)
+- **Frontend:** HTML + Tailwind CSS (CDN)
+- **API:** Etherscan v2
 
-### Prerequisites
+## Setup
 
-- Go 1.24+
-- Etherscan API Key (free at [etherscan.io/apis](https://etherscan.io/apis))
-
-### Clone the repository
+Requirements: Go 1.24+ and an [Etherscan API key](https://etherscan.io/apis) (free).
 
 ```bash
 git clone https://github.com/SalvadorBertazzo/ethFees.git
 cd ethFees
+cp .env.example .env
 ```
 
-### Environment Variables
+Edit `.env` and add your API key:
 
-Create a `.env` file in the root directory:
-
-```env
-ETHERSCAN_API_KEY=your_etherscan_api_key
-PORT=8080 # Optional, defaults to 8080
+```
+ETHERSCAN_API_KEY=your_key_here
 ```
 
-### Run Locally
+Run:
 
 ```bash
 go run cmd/server/main.go
 ```
 
-Visit [http://localhost:8080](http://localhost:8080) in your browser.
-
----
-
-## Project Structure
-
-```
-ethFees/
-  ├── cmd/server/main.go         # Entry point for the Go server
-  ├── internal/
-  │   ├── api/                  # API handlers, routes, server setup
-  │   ├── models/               # Data types
-  │   └── services/             # Etherscan integration, business logic
-  ├── web/                      # Static frontend 
-  ├── go.mod, go.sum            # Go dependencies
-  └── .env                      # Environment variables
-```
-
----
+Open http://localhost:8080. Port is configurable via the `PORT` environment variable.
 
 ## API
 
-### `GET /api/fees/:address`
+### GET /api/fees/:address
 
-Returns:
+Returns the fee breakdown for the given address:
+
 ```json
 {
   "address": "0x...",
-  "out_transactions": [ ... ],
-  "total_fees_eth": "0.123456789",
-  "total_fees_gwei": "123456.78",
-  "total_out_txs": 42
+  "total_out_txs": 42,
+  "total_fees_eth": "0.045231000000000000",
+  "total_fees_gwei": "45231000.000000",
+  "total_fees_usd": "125.40",
+  "eth_price_usd": "2772.50",
+  "out_transactions": [...]
 }
 ```
 
----
+## Project structure
+
+```
+cmd/server/main.go          Entry point
+internal/api/               Routes, handlers, server config
+internal/models/            Data types
+internal/services/          Etherscan client, fee calculation, validation
+web/                        Static frontend (HTML, favicon)
+```
 
 ## License
 
@@ -88,4 +74,4 @@ MIT
 
 ---
 
-**Made by Salvador Bertazzo** 
+Made by [Salvador Bertazzo](https://github.com/SalvadorBertazzo)
