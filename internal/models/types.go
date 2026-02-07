@@ -1,5 +1,13 @@
 package models
 
+import "encoding/json"
+
+type EtherscanRawResponse struct {
+	Status  string          `json:"status"`
+	Message string          `json:"message"`
+	Result  json.RawMessage `json:"result"`
+}
+
 type EtherscanResponse struct {
 	Status  string        `json:"status"`
 	Message string        `json:"message"`
@@ -34,4 +42,8 @@ type FeesResponse struct {
 	TotalFeesETH      string `json:"total_fees_eth"`
 	TotalTransactions int    `json:"total_transactions"`
 	Message           string `json:"message"`
+}
+
+type EthPriceResult struct {
+	EthUSD string `json:"ethusd"`
 }

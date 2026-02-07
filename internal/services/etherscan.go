@@ -9,20 +9,24 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
 func GetTransactions(address string) (*models.EtherscanResponse, error) {
 	apiKey := os.Getenv("ETHERSCAN_API_KEY")
+	if apiKey == "" {
+		return nil, fmt.Errorf("ETHERSCAN_API_KEY is not defined: configure the variable in .env or in the system")
+	}
 
 	url := fmt.Sprintf(
-		"https://api.etherscan.io/api?module=account&action=txlist&address=%s&startblock=0&endblock=99999999&sort=desc&apikey=%s",
+		"https://api.etherscan.io/v2/api?chainid=1&module=account&action=txlist&address=%s&startblock=0&endblock=99999999&sort=desc&apikey=%s",
 		address, apiKey,
 	)
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error connecting to Etherscan: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -31,13 +35,27 @@ func GetTransactions(address string) (*models.EtherscanResponse, error) {
 		return nil, err
 	}
 
-	var etherscanResp models.EtherscanResponse
-	err = json.Unmarshal(body, &etherscanResp)
+	var rawResp models.EtherscanRawResponse
+	err = json.Unmarshal(body, &rawResp)
 	if err != nil {
 		return nil, err
 	}
 
-	return &etherscanResp, nil
+	if rawResp.Status != "1" {
+		return nil, fmt.Errorf("etherscan API error: %s", string(rawResp.Result))
+	}
+
+	var transactions []models.Transaction
+	err = json.Unmarshal(rawResp.Result, &transactions)
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.EtherscanResponse{
+		Status:  rawResp.Status,
+		Message: rawResp.Message,
+		Result:  transactions,
+	}, nil
 }
 
 func GetOutTransactions(transactions []models.Transaction, walletAddress string) []models.Transaction {
@@ -95,4 +113,50 @@ func IsValidEthAddress(address string) bool {
 	// Regex: after 0x, 40 hexadecimal characters
 	match, _ := regexp.MatchString("^0x[0-9a-fA-F]{40}$", address)
 	return match
+}
+
+func GetEthPriceUSD() (float64, error) {
+	apiKey := os.Getenv("ETHERSCAN_API_KEY")
+	if apiKey == "" {
+		return 0, fmt.Errorf("ETHERSCAN_API_KEY is not defined: configure the variable in .env or in the system")
+	}
+
+	url := fmt.Sprintf(
+		"https://api.etherscan.io/v2/api?chainid=1&module=stats&action=ethprice&apikey=%s",
+		apiKey,
+	)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return 0, fmt.Errorf("error connecting to Etherscan: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return 0, err
+	}
+
+	var rawResp models.EtherscanRawResponse
+	err = json.Unmarshal(body, &rawResp)
+	if err != nil {
+		return 0, err
+	}
+
+	if rawResp.Status != "1" {
+		return 0, fmt.Errorf("etherscan API error: %s", string(rawResp.Result))
+	}
+
+	var priceResult models.EthPriceResult
+	err = json.Unmarshal(rawResp.Result, &priceResult)
+	if err != nil {
+		return 0, err
+	}
+
+	price, err := strconv.ParseFloat(priceResult.EthUSD, 64)
+	if err != nil {
+		return 0, fmt.Errorf("error parsing ETH price: %w", err)
+	}
+
+	return price, nil
 }

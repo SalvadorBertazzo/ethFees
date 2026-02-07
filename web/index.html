@@ -82,15 +82,20 @@
 
         resultDiv.innerHTML = `
           <div class="space-y-2 mb-4">
-            <div class="flex justify-between items-center"><span class="font-semibold text-gray-400">Address:</span><span class="truncate text-white">${data.address}</span></div>
+            <div class="flex justify-between items-center"><span class="font-semibold text-gray-400">Address:</span><span class="text-white font-mono">${data.address.slice(0, 10)}...${data.address.slice(-6)}</span></div>
             <div class="flex justify-between items-center"><span class="font-semibold text-gray-400">Number of outgoing transactions:</span><span class="text-white">${data.total_out_txs}</span></div>
             <div class="flex justify-between items-center"><span class="font-semibold text-gray-400">Total fees (ETH):</span><span class="text-white">${Number(data.total_fees_eth)}</span></div>
             <div class="flex justify-between items-center"><span class="font-semibold text-gray-400">Total fees (GWEI):</span><span class="text-white">${Number(data.total_fees_gwei).toLocaleString(undefined, {maximumFractionDigits: 2})}</span></div>
+            ${data.total_fees_usd ? `<div class="flex justify-between items-center"><span class="font-semibold text-gray-400">Total fees (USD):</span><span class="text-green-400 font-medium">$${Number(data.total_fees_usd).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></div>` : ''}
+            ${data.eth_price_usd ? `<div class="flex justify-between items-center"><span class="font-semibold text-gray-400">ETH price:</span><span class="text-gray-300">$${Number(data.eth_price_usd).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></div>` : ''}
           </div>
           <div><span class="font-semibold text-gray-400">OUT Transactions</span>
-            <ul class="divide-y divide-[#2a2a2a] mt-2 max-h-64 overflow-y-auto">
-                ${(data.out_transactions || []).map(tx => `
-                    <li class="py-4 px-3 bg-[#131313] transition-all border-l-4 border-transparent hover:border-blue-500 hover:bg-[#1a1a1a]">
+            <ul class="mt-2 max-h-64 overflow-y-auto">
+                ${(data.out_transactions || []).map(tx => {
+                    const txFeeETH = (parseInt(tx.gasUsed) * parseInt(tx.gasPrice)) / 1e18;
+                    const txFeeUSD = data.eth_price_usd ? (txFeeETH * Number(data.eth_price_usd)) : null;
+                    return `
+                    <li class="py-4 px-3 bg-[#131313] transition-all border-l-4 border-l-transparent hover:border-l-blue-500 hover:bg-[#1a1a1a] border-b border-b-[#2a2a2a] last:border-b-0">
                     <div class="text-xs mb-1">
                         <span class="text-gray-500">Tx Hash:</span>
                         <a href="https://etherscan.io/tx/${tx.hash}" target="_blank" class="text-blue-400 hover:text-blue-300 underline break-all font-mono ml-1">
@@ -110,12 +115,16 @@
                         <span>Gas price:</span>
                         <span class="font-mono">${(parseInt(tx.gasPrice) / 1e9).toLocaleString(undefined, {maximumFractionDigits: 2})} Gwei</span>
                         </div>
+                        ${txFeeUSD !== null ? `<div class="flex justify-between">
+                        <span>Fee (USD):</span>
+                        <span class="font-mono text-green-400">$${txFeeUSD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4})}</span>
+                        </div>` : ''}
                     </div>
                     <div class="text-xs text-gray-600 mt-3 text-right">
                         ${new Date(parseInt(tx.timeStamp) * 1000).toLocaleDateString()} ${new Date(parseInt(tx.timeStamp) * 1000).toLocaleTimeString()}
                     </div>
                     </li>
-                `).join('')}
+                `}).join('')}
             </ul>
           </div>
         `;
