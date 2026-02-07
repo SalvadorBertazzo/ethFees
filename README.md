@@ -4,7 +4,7 @@ Web app that calculates how much an Ethereum address has spent on gas fees. It p
 
 Live demo: https://ethfees.up.railway.app/
 
-![Demo](assets/demo.gif)
+<img src="assets/demo.gif" width="400" />
 
 ## How it works
 
